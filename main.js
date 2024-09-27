@@ -67,21 +67,21 @@ function routeValidate() {
   if (!isCityOriginValid && !isCityDestinyValid) {
     routeTitle.style.display = "none";
     resultBoard.style.display = "flex";
-    route.textContent = "Ambos municipios no existen en el grafo.";
     route.style.fontSize = "1.1em";
+    route.textContent = "Ambos municipios no existen en el grafo.";
   } else if (!isCityOriginValid) {
     routeTitle.style.display = "none";
     resultBoard.style.display = "flex";
-    route.textContent = `El municipio ${inputs[0].value} no es válido.`;
     route.style.fontSize = "1.1em";
+    route.textContent = `El municipio ${inputs[0].value} no es válido.`;
   } else if (!isCityDestinyValid) {
     routeTitle.style.display = "none";
     resultBoard.style.display = "flex";
-    route.textContent = `El municipio ${inputs[1].value} no es válido.`;
     route.style.fontSize = "1.1em";
+    route.textContent = `El municipio ${inputs[1].value} no es válido.`;
   } else {
-    const OUTPUT = ["Sabanagrande", "Soledad", "Galapa", "Baranoa"]; // array para especificar la ruta, string para decir que no existe
-    routeTitle.style.display = "block";
+    const OUTPUT = ["Barranquilla", "Soledad"]; // array para especificar la ruta, string para decir que no existe
+   if (typeof OUTPUT !== "string") routeTitle.style.display = "block";
     resultBoard.style.display = "flex";
     route.style.display = "block";
     route.style.fontSize = "1.4em";
