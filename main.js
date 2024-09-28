@@ -74,7 +74,7 @@ function routeValidate(map) {
   const resultBoard = document.querySelector(".bfs__data-general");
 
   const [cityOrigin, cityDestiny] = Array.from(inputs).map((input) =>
-    input.value.toLowerCase()
+    input.value.toLowerCase().trim()
   );
 
   const updateUI = (message, displayTitle = false, fontSize = "1.1em") => {
