@@ -171,8 +171,6 @@ function bfs(graph, cityOrigin, cityDestiny) {
   while (queue.length > 0) {
     const route = queue.shift();
     const node = route[route.length - 1];
-    console.log(node);
-    console.log(cityDestiny);
 
     if (node === cityDestiny) {
       return route;
