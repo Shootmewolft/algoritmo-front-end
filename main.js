@@ -33,81 +33,110 @@ const CITYS = [
   },
 ];
 
+const graph = {
+  Barranquilla: ["Soledad", "Puerto Colombia", "Galapa", "Sabanagrande"],
+  Soledad: [
+    "Barranquilla",
+    "Galapa",
+    "Sabanagrande",
+    "Santo Tomás",
+    "Puerto Colombia",
+  ],
+  "Santo Tomás": ["Palmar", "Baranoa", "Soledad", "Sabanagrande"],
+  Baranoa: ["Santo Tomás", "Sabanagrande", "Puerto Colombia", "Palmar"],
+  "Puerto Colombia": ["Barranquilla", "Soledad", "Galapa", "Baranoa"],
+  Sabanagrande: ["Baranoa", "Soledad", "Santo Tomás", "Barranquilla"],
+  Galapa: ["Soledad", "Puerto Colombia", "Barranquilla", "Baranoa"],
+  Palmar: ["Santo Tomás", "Baranoa", "Sabanagrande"],
+};
+
 // INIT MAP
-const map = L.map("map").setView([10.987519695229325, -74.8096751996253], 13);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+let routeControl;
+document.addEventListener("DOMContentLoaded", () => {
+  const map = L.map("map").setView([10.987519695229325, -74.8096751996253], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  const form = document.querySelector("form");
+  
+  form.addEventListener("submit", handleSubmit);
+  
+  function handleSubmit(event) {
+    event.preventDefault();
+    routeValidate(map);
+  }
+});
 
 // FORM
 
-const form = document.querySelector("form");
 
-form.addEventListener("submit", handleSubmit);
-
-function handleSubmit(event) {
-  event.preventDefault();
-  routeValidate();
-}
-
-function routeValidate() {
-  const route = document.querySelector("#route");
+function routeValidate(map) {
+  const routeText = document.querySelector("#route");
   const inputs = document.querySelectorAll("#city-input");
   const routeTitle = document.querySelector("#route-title");
   const resultBoard = document.querySelector(".bfs__data-general");
 
-  const cityOrigin = inputs[0].value.toLowerCase();
-  const cityDestiny = inputs[1].value.toLowerCase();
-
-  const isCityOriginValid = CITYS.some(
-    (city) => city.name.toLowerCase() === cityOrigin
+  const [cityOrigin, cityDestiny] = Array.from(inputs).map((input) =>
+    input.value.toLowerCase()
   );
-  const isCityDestinyValid = CITYS.some(
-    (city) => city.name.toLowerCase() === cityDestiny
+
+  const updateUI = (message, displayTitle = false, fontSize = "1.1em") => {
+    routeTitle.style.display = displayTitle ? "block" : "none";
+    resultBoard.style.display = "flex";
+    routeText.style.display = "block";
+    routeText.style.fontSize = fontSize;
+    routeText.textContent = message;
+  };
+
+  const [isCityOriginValid, isCityDestinyValid] = [cityOrigin, cityDestiny].map(
+    (city) => CITYS.some((c) => c.name.toLowerCase() === city)
   );
 
   if (!isCityOriginValid && !isCityDestinyValid) {
-    routeTitle.style.display = "none";
-    resultBoard.style.display = "flex";
-    route.style.fontSize = "1.1em";
-    route.textContent = "Ambos municipios no existen en el grafo.";
+    updateUI("Ambos municipios no existen en el grafo.");
   } else if (!isCityOriginValid) {
-    routeTitle.style.display = "none";
-    resultBoard.style.display = "flex";
-    route.style.fontSize = "1.1em";
-    route.textContent = `El municipio ${inputs[0].value} no es válido.`;
+    updateUI(`El municipio ${inputs[0].value} no es válido.`);
   } else if (!isCityDestinyValid) {
-    routeTitle.style.display = "none";
-    resultBoard.style.display = "flex";
-    route.style.fontSize = "1.1em";
-    route.textContent = `El municipio ${inputs[1].value} no es válido.`;
+    updateUI(`El municipio ${inputs[1].value} no es válido.`);
   } else {
-    const OUTPUT = ["Barranquilla", "Soledad"]; // array para especificar la ruta, string para decir que no existe
-   if (typeof OUTPUT !== "string") routeTitle.style.display = "block";
-    resultBoard.style.display = "flex";
-    route.style.display = "block";
-    route.style.fontSize = "1.4em";
+    const formatCityName = (city) =>
+      city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+    const [cityOriginTitle, cityDestinyTitle] = [cityOrigin, cityDestiny].map(
+      formatCityName
+    );
+
+    const route = bfs(graph, cityOriginTitle, cityDestinyTitle);
     const isRoute =
-      typeof OUTPUT === "string"
-        ? OUTPUT
-        : OUTPUT.toString().replaceAll(",", " -> ");
-    route.textContent = isRoute;
-    drawRouteMap(OUTPUT);
+      typeof route === "string"
+        ? route
+        : route.toString().replaceAll(",", " -> ");
+
+    updateUI(isRoute, true, "1.4em");
+    drawRouteMap(route, map);
   }
 }
 
-function drawRouteMap(OUTPUT) {
-  const waypointsCitys = CITYS.filter((city) => OUTPUT.includes(city.name));
+function drawRouteMap(route, map) {
+  if (typeof route === "string") {
+    map.setView([10.987519695229325, -74.8096751996253], map.getZoom());
+    return;
+  }
+  const waypointsCitys = CITYS.filter((city) => route.includes(city.name));
   const waypointsSort = waypointsCitys.sort((a, b) => {
-    return OUTPUT.indexOf(a.name) - OUTPUT.indexOf(b.name);
+    return route.indexOf(a.name) - route.indexOf(b.name);
   });
   const waypoints = waypointsSort.map((city) => L.latLng(city.coord));
-  const firstCityOutput = CITYS.filter((city) => city.name === OUTPUT[0]);
+  const firstCityroute = CITYS.filter((city) => city.name === route[0]);
   const isRoute =
-    typeof OUTPUT === "string"
+    typeof route === "string"
       ? [10.987519695229325, -74.8096751996253]
-      : firstCityOutput[0].coord;
+      : firstCityroute[0].coord;
+
+  if (routeControl) {
+    map.removeControl(routeControl);
+  }
 
   map.setView(isRoute, map.getZoom());
-  L.Routing.control({
+
+  routeControl = L.Routing.control({
     waypoints: waypoints,
     routeWhileDragging: false,
     draggableWaypoints: false,
@@ -122,4 +151,28 @@ function drawRouteMap(OUTPUT) {
 
     L.marker(point, { icon: label }).addTo(map);
   });
+}
+
+function bfs(graph, cityOrigin, cityDestiny) {
+  const queue = [[cityOrigin]];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const route = queue.shift();
+    const node = route[route.length - 1];
+
+    if (node === cityDestiny) {
+      return route;
+    } else if (!visited.has(node)) {
+      visited.add(node);
+      const neighbors = graph[node] || [];
+
+      for (const neighbor of neighbors) {
+        const newRoute = [...route, neighbor];
+        queue.push(newRoute);
+      }
+    }
+  }
+
+  return "No hay una ruta para estos municipios";
 }
