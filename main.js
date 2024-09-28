@@ -39,15 +39,15 @@ const graph = {
     "Barranquilla",
     "Galapa",
     "Sabanagrande",
-    "Santo Tomás",
+    "Santo Tomas",
     "Puerto Colombia",
   ],
-  "Santo Tomás": ["Palmar", "Baranoa", "Soledad", "Sabanagrande"],
-  Baranoa: ["Santo Tomás", "Sabanagrande", "Puerto Colombia", "Palmar"],
+  "Santo Tomas": ["Palmar", "Baranoa", "Soledad", "Sabanagrande"],
+  Baranoa: ["Santo Tomas", "Sabanagrande", "Puerto Colombia", "Palmar"],
   "Puerto Colombia": ["Barranquilla", "Soledad", "Galapa", "Baranoa"],
-  Sabanagrande: ["Baranoa", "Soledad", "Santo Tomás", "Barranquilla"],
+  Sabanagrande: ["Baranoa", "Soledad", "Santo Tomas", "Barranquilla"],
   Galapa: ["Soledad", "Puerto Colombia", "Barranquilla", "Baranoa"],
-  Palmar: ["Santo Tomás", "Baranoa", "Sabanagrande"],
+  Palmar: ["Santo Tomas", "Baranoa", "Sabanagrande"],
 };
 
 // INIT MAP
@@ -56,9 +56,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const map = L.map("map").setView([10.987519695229325, -74.8096751996253], 13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   const form = document.querySelector("form");
-  
+
   form.addEventListener("submit", handleSubmit);
-  
+
   function handleSubmit(event) {
     event.preventDefault();
     routeValidate(map);
@@ -66,7 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // FORM
-
 
 function routeValidate(map) {
   const routeText = document.querySelector("#route");
@@ -87,7 +86,7 @@ function routeValidate(map) {
   };
 
   const [isCityOriginValid, isCityDestinyValid] = [cityOrigin, cityDestiny].map(
-    (city) => CITYS.some((c) => c.name.toLowerCase() === city)
+    (city) => CITYS.some((c) => c.name.toLowerCase() === city.trim())
   );
 
   if (!isCityOriginValid && !isCityDestinyValid) {
@@ -98,11 +97,13 @@ function routeValidate(map) {
     updateUI(`El municipio ${inputs[1].value} no es válido.`);
   } else {
     const formatCityName = (city) =>
-      city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+      city
+        .split(" ")
+        .map((letter) => letter.charAt(0).toUpperCase() + letter.slice(1))
+        .join(" ");
     const [cityOriginTitle, cityDestinyTitle] = [cityOrigin, cityDestiny].map(
       formatCityName
     );
-
     const route = bfs(graph, cityOriginTitle, cityDestinyTitle);
     const isRoute =
       typeof route === "string"
@@ -134,6 +135,16 @@ function drawRouteMap(route, map) {
     map.removeControl(routeControl);
   }
 
+  map.eachLayer((layer) => {
+    if (
+      layer instanceof L.Marker &&
+      layer.options.icon &&
+      layer.options.icon.options.className === "waypoint-label"
+    ) {
+      map.removeLayer(layer);
+    }
+  });
+
   map.setView(isRoute, map.getZoom());
 
   routeControl = L.Routing.control({
@@ -160,6 +171,8 @@ function bfs(graph, cityOrigin, cityDestiny) {
   while (queue.length > 0) {
     const route = queue.shift();
     const node = route[route.length - 1];
+    console.log(node);
+    console.log(cityDestiny);
 
     if (node === cityDestiny) {
       return route;
